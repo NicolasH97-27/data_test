@@ -1,6 +1,6 @@
 Airbnb Search System with FastAPI & Typesense
 
-Project Overview
+Project Overview:
 
 This project is a search system for Airbnb listings, using:
 FastAPI for the REST API.
