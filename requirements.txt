@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pandas
+sqlite3
+requests
+typesense
+python-dotenv
+sqlalchemy
