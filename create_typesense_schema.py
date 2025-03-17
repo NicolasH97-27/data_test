@@ -1,7 +1,11 @@
 import requests
-
+import os
+from dotenv import load_dotenv
 # Configuración de Typesense
-TYPESENSE_API_KEY = "48fe8dc-2d51-4e61-ba9f-057e835c0e77"
+TYPESENSE_API_KEY = os.getenv("TYPESENSE_API_KEY")
+
+if not TYPESENSE_API_KEY:
+    raise ValueError("La API key de Typesense no está configurada correctamente.")
 TYPESENSE_HOST = "http://localhost:8108"
 HEADERS = {"X-TYPESENSE-API-KEY": TYPESENSE_API_KEY}
 

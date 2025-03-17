@@ -6,3 +6,4 @@ requests
 typesense
 python-dotenv
 sqlalchemy
+dotenv
