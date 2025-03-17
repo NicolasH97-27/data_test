@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-requests
-sqlite3
-pandas
-pydantic
-typesense
-python-dotenv

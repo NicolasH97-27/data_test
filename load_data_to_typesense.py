@@ -1,71 +1,44 @@
-import requests
 import sqlite3
-import json
+import requests
 
-
-TYPESENSE_API_KEY = "tu_api_key_segura"
+# Configurar Typesense
+TYPESENSE_API_KEY = "48fe8dc-2d51-4e61-ba9f-057e835c0e77"
 TYPESENSE_HOST = "http://localhost:8108"
 HEADERS = {"X-TYPESENSE-API-KEY": TYPESENSE_API_KEY}
 
+DB_PATH = "marketing_campaigns.db"
 
-COLLECTIONS = {
-    "airbnb_listings": {
-        "table": "listings",
-        "fields": ["id", "name", "host_id", "host_name", "neighbourhood", "latitude", "longitude", "room_type", "price", "minimum_nights"]
-    },
-    "airbnb_calendar": {
-        "table": "calendar",
-        "fields": ["listing_id", "date", "available", "price"]
-    },
-    "airbnb_reviews": {
-        "table": "reviews",
-        "fields": ["id", "listing_id", "date", "reviewer_name", "comments"]
-    },
-}
-
-
-BATCH_SIZE = 100
-
-def get_db_connection():
-    """Conectar a la base de datos SQLite."""
-    conn = sqlite3.connect("airbnb_data.db")
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def fetch_data(table, fields):
-    """Obtener datos de una tabla específica."""
-    conn = get_db_connection()
+def load_table_to_typesense(table_name):
+    """Carga datos de una tabla SQLite a Typesense."""
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    query = f"SELECT {', '.join(fields)} FROM {table} LIMIT 10"  
-    cursor.execute(query)
+
+    print(f"🚀 Cargando datos de {table_name} en Typesense...")
+
+    # Obtener todos los datos de la tabla
+    cursor.execute(f"SELECT * FROM {table_name}")
     rows = cursor.fetchall()
+    columns = [desc[0] for desc in cursor.description]
+    
+    # Convertir los datos en formato JSON para Typesense
+    documents = []
+    for row in rows:
+        doc = {columns[i]: row[i] for i in range(len(columns))}
+        documents.append(doc)
+
+    # Insertar los datos en Typesense
+    url = f"{TYPESENSE_HOST}/collections/{table_name}/documents/import"
+    response = requests.post(url, headers=HEADERS, json=documents)
+
+    if response.status_code == 200:
+        print(f"✅ Datos de {table_name} cargados en Typesense.")
+    else:
+        print(f"❌ Error al cargar {table_name}: {response.json()}")
+
     conn.close()
-    return [dict(row) for row in rows]
 
-def load_data_to_typesense():
-    """Carga los datos en Typesense por lotes para evitar bloqueos."""
-    for collection, config in COLLECTIONS.items():
-        print(f"🚀 Cargando datos en la colección '{collection}' desde la tabla '{config['table']}'...")
-        
-        # Obtener los datos de la base de datos
-        data = fetch_data(config["table"], config["fields"])
-        
-        if not data:
-            print(f"⚠️ No hay datos para cargar en '{collection}'")
-            continue
-        
-        # Enviar datos en batches pequeños
-        for i in range(0, len(data), BATCH_SIZE):
-            batch = data[i : i + BATCH_SIZE]
-            
-            response = requests.post(
-                f"{TYPESENSE_HOST}/collections/{collection}/documents/import",
-                headers=HEADERS,
-                data=json.dumps(batch)
-            )
-            
-            print(f"✅ Batch {i // BATCH_SIZE + 1} en '{collection}' cargado: {response.status_code}")
+# Cargar cada tabla en Typesense
+for table in ["campaigns", "client_first_purchase_date", "holidays", "messages_demo"]:
+    load_table_to_typesense(table)
 
-if __name__ == "__main__":
-    load_data_to_typesense()
-    print("🎉 ¡Carga de datos completada!")
+print("🎉 Todos los datos han sido cargados en Typesense.")
